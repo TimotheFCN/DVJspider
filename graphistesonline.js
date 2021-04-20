@@ -1,14 +1,18 @@
 require('dotenv').config({path: __dirname + '/.env'});
+const Discord = require('discord.js');
 
-//Login infos from the confg file
+//Login infos and discord channel from the confg file
 let username = process.env.GO_Username;
 let password = process.env.GO_Password;
+var channel;
 
 //Check new offers and sends a message on Discord if so
-exports.run = async function(page, db) {
+exports.run = async function(page, db, client) {
+    channel = client.channels.cache.get(process.env.Discord_Channel);
+
     const mainurl = 'https://www.graphistesonline.com/mypage.php?quoi=my_demandes4';
     await page.goto(mainurl);
-    await page.waitForSelector('#loader', {visible: false}); //Wait for the page to load
+    //await page.waitForSelector('#loader', {visible: false}); //Wait for the page to load
 
     //Check if the user is logged, if not, log the user
     if(page.url() !== mainurl) await login(page); //Log in
@@ -19,6 +23,7 @@ exports.run = async function(page, db) {
 
 //Log with a specified user on the site
 async function login(page) {
+    console.log("login");
     await page.goto('https://www.graphistesonline.com/visitor_mypage_3.php?quoi=login&where='); //Go to the login page
     await page.waitForSelector('#loader', {visible: false}); //Wait for the page to load
     //Fill the form
@@ -54,7 +59,7 @@ async function getOffers(page) {
               //Use the string formatting to get the infos we need
               link: element.href, //Link to the offer
               num: element.href.split("&id=")[1], //ID of the offer
-              title: (element.innerHTML.substring( element.innerHTML.indexOf("&nbsp;") + 6, element.innerHTML.indexOf("</h3>")).replaceAll("&nbsp;", "")+" "), //Title of the offer
+              title: (element.innerHTML.substring( element.innerHTML.indexOf("&nbsp;") + 6, element.innerHTML.indexOf("("+element.href.split("&id=")[1]+")")).replaceAll("&nbsp;", "")+" "), //Title of the offer
               desc: element.innerHTML.substring( element.innerHTML.indexOf("projet : </strong>") + 18, element.innerHTML.indexOf("<br><br>")) //Description of the offer
 
           }
@@ -69,11 +74,48 @@ async function processOffers(db, offers) {
     offers.forEach(offer => {
         db.all('SELECT 1 FROM GraphistesOnline WHERE id = ' + offer.num, (err, result) => {
             if(err) throw err;
-            if (result.length == 0) //Si l'id n'existe pas déjà
+            if (result.length == 0) //If the ID doesn't exist
             {
-                db.run('INSERT INTO GraphistesOnline VALUES(?)', [offer.num]); //Ajout de l'ID à la base
-                console.log("Nouvelle offre trouvée : " + offer.num);
+                sendMessage(offer);
+                db.run('INSERT INTO GraphistesOnline VALUES(?)', [offer.num]); //Add the ID to the database
+                console.log("New offer found : " + offer.num);
             }
         });
     });
+}
+
+//Build and send the message to Discord
+async function sendMessage(offer) {
+    const embed = {
+        "title": offer.num,
+        "url": offer.link,
+        "color": 13570130,
+        "thumbnail": {
+          "url": "https://pbs.twimg.com/profile_images/1241262105/logo_graphistesonline_400x400.PNG"
+        },
+        "author": {
+          "name": "GraphistesOnline",
+          "url": "https://graphistesonline.com",
+          "icon_url": "https://pbs.twimg.com/profile_images/1241262105/logo_graphistesonline_400x400.PNG"
+        },
+        "fields": [
+          {
+            "name": "Titre",
+            "value": offer.title
+          },
+          {
+            "name": "Description",
+            "value": offer.desc
+          },
+          {
+            "name": "​",
+            "value": "​"
+          },
+          {
+            "name": "👇🏻",
+            "value": offer.link
+          }
+        ]
+      };
+      channel.send("\n**Un nouvel appel d'offre a été publié !** \n@here", { embed });
 }

@@ -1,8 +1,10 @@
 require('dotenv').config({path: __dirname + '/.env'});
 const playwright = require('playwright');
 const sqlite3 = require('sqlite3');
+const Discord = require('discord.js');
 
-const graphistesonline = require('./graphistesonline')
+const graphistesonline = require('./graphistesonline');
+const client = new Discord.Client();
 
 //Opening sqlite database to store websites last updates
 let db = new sqlite3.Database('updates.db', err => {
@@ -14,8 +16,14 @@ module.exports.run = async() => {
     
   //Create tables if they don't exists
   db.run(`CREATE TABLE IF NOT EXISTS GraphistesOnline(id INTEGER PRIMARY KEY)`);
-  
-  const browser = await playwright.chromium.launch({headless: false}); //Open a new brower window
+
+  //DISCORD LOGIN
+  await client.login(process.env.Discord_Token) //Login with Discord API
+  await client.on('ready', function() {
+      console.log("Bot connected"); // Wait for the bot to connect
+  })
+
+  const browser = await playwright.chromium.launch({headless: true}); //Open a new brower window
   const page = await browser.newPage(); //Open a new page
     
   //Block useless content on the page
@@ -25,14 +33,13 @@ module.exports.run = async() => {
        else route.continue();
       });
 
-    //Run all websites checks
-    await graphistesonline.run(page, db); //Refresh Graphistesonline
 
+    //Run all websites checks every 5 minutes
+    setInterval(async function() {
+      console.log("Checking websites");
+      await graphistesonline.run(page, db, client); //Refresh Graphistesonline
+    }, 30000);
 
-
-
-    browser.close();
-    db.close();
 }
 
 
