@@ -6,6 +6,7 @@ let username = process.env.GO_Username;
 let password = process.env.GO_Password;
 var channel;
 var messageSent = false; //If feedback message has already been sent
+var offersFetched = false //Temporary fix for unexpected errors when loading the page for the first time
 
 //Check new offers and sends a message on Discord if so
 exports.run = async function(page, db, client) {
@@ -13,14 +14,17 @@ exports.run = async function(page, db, client) {
 
     const mainurl = 'https://www.graphistesonline.com/mypage.php?quoi=my_demandes4';
     await page.goto(mainurl);
-    //await page.waitForSelector('#loader', {visible: false}); //Wait for the page to load
+    setTimeout(() => {}, 2000);
 
     //Check if the user is logged, if not, log the user
-    if (page.url().includes("login")) await login(page); //Log in
+    if (page.url().includes("login")) {
+        await login(page); //Log in
+        console.log("logged");
+    }
 
     await page.goto(mainurl);
     await page.waitForSelector('#bloc-presta-prj-dispo', { visible: false }); //Wait for the page to load
-
+    setTimeout(() => {}, 2000);
     if (page.url().includes("feedback")) EvaluateMessage();
     else {
         messageSent = false;
@@ -36,8 +40,8 @@ async function login(page) {
     //Fill the form
     await page.type('input[name=nick]', username, { delay: 20 });
     await page.type('input[name=password]', password, { delay: 20 });
-    await page.waitForSelector('#form_submit', { delay: 20 });
-    await page.click('#form_submit', { delay: 20 })
+    await page.waitForSelector('#form_submit', { delay: 200 });
+    await page.click('#form_submit', { delay: 200 })
     return;
 }
 
@@ -54,7 +58,6 @@ async function EvaluateMessage(page) {
 //Sends back all offers on the first page
 async function getOffers(page) {
     await page.waitForSelector('//*[@id="liste_all"]/ul/li[1]/a/h3', { visible: true }, { delay: 2000 }); //Wait for the page to load
-
     //Select the list of offers and put it in the array "result"
     let listSelector = "#liste_all > ul > li > a";
     var result = await page.$$eval(listSelector, list => {
@@ -74,6 +77,7 @@ async function getOffers(page) {
     //Formatting the array with the desired infos (offers contains a list of offer)
     var offers = [];
     for (let element of result) {
+
         let offer = {
             //Use the string formatting to get the infos we need
             link: element.href, //Link to the offer

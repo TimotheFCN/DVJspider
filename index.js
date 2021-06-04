@@ -35,13 +35,15 @@ module.exports.run = async() => {
         else route.continue();
     });
 
-    await graphistesonline.run(page, db, client); //First check
-
-    //Run all websites checks every 5 minutes
-    setInterval(async function() {
+    async function refreshSites() {
         console.log("Checking websites");
         await graphistesonline.run(page, db, client); //Refresh Graphistesonline
-    }, 300000);
+    }
+
+    await refreshSites();
+
+    //Run all websites checks every 5 minutes
+    setInterval(await refreshSites, 300000);
 
 }
 
