@@ -35,6 +35,7 @@ module.exports.run = async() => {
         else route.continue();
     });
 
+    await graphistesonline.run(page, db, client); //First check
 
     //Run all websites checks every 5 minutes
     setInterval(async function() {
