@@ -47,23 +47,17 @@ async function getOffers(page) {
     await new Promise(resolve => setTimeout(resolve, 2000));
     await page.waitForSelector('body > app-root > div > div.mybody > app-navbar > mat-sidenav-container > mat-sidenav-content > div > div > app-appels-d-offres > div > div:nth-child(4) > div:nth-child(2)', { visible: true }); //Wait for the page to load
     //Select the list of offers and put it in the array "result"
-    let listSelector = '[class="mat-button-wrapper"]';
-    console.log(await page.$eval(listSelector).innerHTML);
-    var result = await page.$$eval(listSelector, list => {
-        var result = [];
-        for (let i = 0; i < list.length; i++) {
-            var data = {
-                href: list[i].href,
-                textContent: list[i].textContent,
-                innerHTML: list[i].innerHTML
-            };
-            result.push(data);
-        }
-        return result;
-    });
+    let content = await page.$$('mat-card-content');
+    var result = [];
+     for (let i = 1; i < content.length; i++) {
+        var data = {
+             innerHTML: content[i].innerHTML
+        };
+        result.push(data);
+        console.log(data);
+    }
 
-
-    //Formatting the array with the desired infos (offers contains a list of offer)
+  /*  //Formatting the array with the desired infos (offers contains a list of offer)
     var offers = [];
     for (let element of result) {
 
@@ -78,7 +72,7 @@ async function getOffers(page) {
         offers.push(offer);
     }
     //Return the array
-    return offers;
+    return offers;*/
 }
 
 //Check for each offers if it is already in the database. If not, sends a message on Discord and updates the database.
