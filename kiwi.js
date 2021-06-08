@@ -8,7 +8,7 @@ var channel;
 
 //Check new offers and sends a message on Discord if so
 exports.run = async function(page, db, client) {
-    channel = client.channels.cache.get(process.env.Discord_Channel);
+    channel = client.channels.cache.get(process.env.Discord_Kiwi_Channel);
 
     const mainurl = 'https://kiwi.junior-entreprises.com/business/appels-d-offres/';
     await page.goto(mainurl);

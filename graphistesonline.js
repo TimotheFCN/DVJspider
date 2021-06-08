@@ -10,7 +10,7 @@ var offersFetched = false //Temporary fix for unexpected errors when loading the
 
 //Check new offers and sends a message on Discord if so
 exports.run = async function(page, db, client) {
-    channel = client.channels.cache.get(process.env.Discord_Channel);
+    channel = client.channels.cache.get(process.env.Discord_GO_Channel);
 
     const mainurl = 'https://www.graphistesonline.com/mypage.php?quoi=my_demandes4';
     await page.goto(mainurl);
