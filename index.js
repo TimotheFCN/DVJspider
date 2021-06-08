@@ -27,7 +27,7 @@ module.exports.run = async() => {
         console.log("Bot connected");
     })
 
-    const browser = await playwright.chromium.launch({ headless: false }); //Open a new brower window
+    const browser = await playwright.chromium.launch( /*{ headless: false }*/ ); //Open a new brower window
     const page_gonline = await browser.newPage(); //Open a new page for GraphistesOnline
     const page_kiwi = await browser.newPage(); //Open a new page for Kiwi
 
@@ -38,21 +38,28 @@ module.exports.run = async() => {
         else route.continue();
     });
     await page_kiwi.route('**/*', route => {
-        if (route.request().resourceType() === 'image' || route.request().resourceType() === 'css')
+        if (route.request().resourceType() === 'image' || route.request().resourceType() === 'css' || route.request().url().includes("hotjar") || route.request().url().includes("gtag"))
             route.abort()
         else route.continue();
     });
 
-    async function refreshSites() {
-        console.log("Checking websites");
-        //await graphistesonline.run(page_gonline, db, client); //Refresh Graphistesonline
-        await kiwi.run(page_kiwi, db, client); //Refresh Graphistesonline
+    async function refreshGO() {
+        console.log("Checking GO");
+        await graphistesonline.run(page_gonline, db, client);
     }
 
-    await refreshSites();
+    async function refreshKiwi() {
+        console.log("Checking Kiwi");
+        await kiwi.run(page_kiwi, db, client);
+    }
 
-    //Run all websites checks every 5 minutes
-    setInterval(await refreshSites, 300000);
+    await refreshGO();
+    await refreshKiwi();
+
+    //Check GO every 10 minutes and Kiwi every 20 minutes
+    setInterval(await refreshGO, 600000);
+    setInterval(await refreshKiwi, 1200000);
+
 
 }
 

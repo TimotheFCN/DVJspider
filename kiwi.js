@@ -12,7 +12,6 @@ exports.run = async function(page, db, client) {
 
     const mainurl = 'https://kiwi.junior-entreprises.com/business/appels-d-offres/';
     await page.goto(mainurl);
-    setTimeout(() => {}, 2000);
 
     //Check if the user is logged, if not, log the user
     if (page.url().includes("auth")) {
@@ -21,10 +20,9 @@ exports.run = async function(page, db, client) {
     }
 
     await page.goto(mainurl);
-    await page.waitForSelector('body > app-root > div > div.mybody > app-navbar > mat-sidenav-container > mat-sidenav-content > div > div > app-appels-d-offres > div > div:nth-child(4) > div:nth-child(2)', { visible: false }); //Wait for the page to load
-    setTimeout(() => {}, 2000);
-    //await processOffers(db, await getOffers(page));
-    await getOffers(page);
+    //await page.waitForSelector('body > app-root > div > div.mybody > app-navbar > mat-sidenav-container > mat-sidenav-content > div > div > app-appels-d-offres > div > div:nth-child(4) > div:nth-child(2)', { visible: false }); //Wait for the page to load
+
+    await processOffers(db, await getOffers(page));
 }
 
 //Log with a specified user on the site
@@ -37,42 +35,39 @@ async function login(page) {
     await page.type('#mat-input-1', password, { delay: 20 });
     await page.keyboard.press('Enter');
     //await page.click('body > app-root > app-login > div.container > div > mat-card > mat-card-actions > button', { delay: 5000 })
-    setTimeout(() => {}, 1000);
     await page.waitForSelector('body > app-root > div > div.mybody > app-navbar > mat-sidenav-container > mat-sidenav-content > div > div > app-home > div > h1');
     return;
 }
 
 //Sends back all offers on the first page
 async function getOffers(page) {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    await page.waitForSelector('body > app-root > div > div.mybody > app-navbar > mat-sidenav-container > mat-sidenav-content > div > div > app-appels-d-offres > div > div:nth-child(4) > div:nth-child(2)', { visible: true }); //Wait for the page to load
-    //Select the list of offers and put it in the array "result"
-    let content = await page.$$('mat-card-content');
-    var result = [];
-     for (let i = 1; i < content.length; i++) {
-        var data = {
-             innerHTML: content[i].innerHTML
-        };
-        result.push(data);
-        console.log(data);
-    }
 
-  /*  //Formatting the array with the desired infos (offers contains a list of offer)
-    var offers = [];
-    for (let element of result) {
+    await page.waitForSelector('body > app-root > div > div.mybody > app-navbar > mat-sidenav-container > mat-sidenav-content > div > div > app-appels-d-offres > div > div:nth-child(4) > div:nth-child(2) > mat-card > app-card-ao:nth-child(2) > mat-card > mat-card-content > div:nth-child(5) > button > span.mat-button-wrapper', { visible: true }); //Wait for the page to load
 
+    var offers = []; //List of all the availible offers
+
+    for (let i = 2; i < 6; i++) { //Get the 5 last offers
+        let selector = 'body > app-root > div > div.mybody > app-navbar > mat-sidenav-container > mat-sidenav-content > div > div > app-appels-d-offres > div > div:nth-child(4) > div:nth-child(2) > mat-card > app-card-ao:nth-child(' + i + ') > mat-card > mat-card-content > div:nth-child(5) > button';
+
+        //Wait for the popup to load
+        const [request] = await Promise.all([
+            page.waitForNavigation(),
+            // Triggers the request
+            page.click(selector),
+        ]);
+
+        //Aggregate the datas
         let offer = {
-            //Use the string formatting to get the infos we need
-            link: element.href, //Link to the offer
-            num: element.href.split("&id=")[1], //ID of the offer
-            title: (element.innerHTML.substring(element.innerHTML.indexOf("&nbsp;") + 6, element.innerHTML.indexOf("(" + element.href.split("&id=")[1] + ")")).replace("&nbsp;", "") + " "), //Title of the offer
-            desc: element.innerHTML.substring(element.innerHTML.indexOf("projet : </strong>") + 18, element.innerHTML.indexOf("<br><br>")) //Description of the offer
-
+            num: page.url().split('offres/')[1],
+            title: await page.$eval('#mat-dialog-' + (i - 2) + ' > app-popup-ao-details > div > h1', el => el.innerText)
         }
         offers.push(offer);
+
+        await page.keyboard.press('Escape', { delay: 200 }); //Exit the popup
     }
+
     //Return the array
-    return offers;*/
+    return offers;
 }
 
 //Check for each offers if it is already in the database. If not, sends a message on Discord and updates the database.
@@ -94,23 +89,19 @@ async function processOffers(db, offers) {
 async function sendMessage(offer) {
     const embed = {
         "title": offer.num,
-        "url": offer.link,
+        "url": 'https://kiwi.junior-entreprises.com/business/appels-d-offres/',
         "color": 13570130,
         "thumbnail": {
-            "url": "https://pbs.twimg.com/profile_images/1241262105/logo_graphistesonline_400x400.PNG"
+            "url": "https://auth.junior-entreprises.com/assets/logos/JE_logo.png"
         },
         "author": {
-            "name": "GraphistesOnline",
-            "url": "https://graphistesonline.com",
-            "icon_url": "https://pbs.twimg.com/profile_images/1241262105/logo_graphistesonline_400x400.PNG"
+            "name": "Kiwi",
+            "url": "https://kiwi.junior-entreprises.com/",
+            "icon_url": "https://auth.junior-entreprises.com/assets/logos/JE_logo.png"
         },
         "fields": [{
                 "name": "Titre",
                 "value": offer.title
-            },
-            {
-                "name": "Description",
-                "value": offer.desc
             },
             {
                 "name": "​",
@@ -118,7 +109,7 @@ async function sendMessage(offer) {
             },
             {
                 "name": "👇🏻",
-                "value": offer.link
+                "value": 'https://kiwi.junior-entreprises.com/business/appels-d-offres/'
             }
         ]
     };
