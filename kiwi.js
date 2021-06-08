@@ -23,6 +23,8 @@ exports.run = async function(page, db, client) {
     //await page.waitForSelector('body > app-root > div > div.mybody > app-navbar > mat-sidenav-container > mat-sidenav-content > div > div > app-appels-d-offres > div > div:nth-child(4) > div:nth-child(2)', { visible: false }); //Wait for the page to load
 
     await processOffers(db, await getOffers(page));
+
+    await page.close();
 }
 
 //Log with a specified user on the site

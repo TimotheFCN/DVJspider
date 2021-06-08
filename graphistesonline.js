@@ -14,7 +14,6 @@ exports.run = async function(page, db, client) {
 
     const mainurl = 'https://www.graphistesonline.com/mypage.php?quoi=my_demandes4';
     await page.goto(mainurl);
-    setTimeout(() => {}, 2000);
 
     //Check if the user is logged, if not, log the user
     if (page.url().includes("login")) {
@@ -24,12 +23,12 @@ exports.run = async function(page, db, client) {
 
     await page.goto(mainurl);
     await page.waitForSelector('#bloc-presta-prj-dispo', { visible: false }); //Wait for the page to load
-    setTimeout(() => {}, 2000);
     if (page.url().includes("feedback")) EvaluateMessage();
     else {
         messageSent = false;
         await processOffers(db, await getOffers(page));
     }
+    await page.close();
 }
 
 //Log with a specified user on the site
@@ -49,7 +48,7 @@ async function login(page) {
 async function EvaluateMessage(page) {
     console.log("feedback pending");
     if (!messageSent) {
-        channel.send("\n @here\n /!\\  `Une demande de feedback est en attente, impossible de vérifier les nouvelles offres.`  /!\\ \n<https://www.graphistesonline.com/mypage.php?quoi=my_demandes4>");
+        channel.send("\n @here\n ⛔  `Une demande de feedback est en attente, impossible de vérifier les nouvelles offres.`  ⛔ \n<https://www.graphistesonline.com/mypage.php?quoi=my_demandes4> \n");
         messageSent = true;
     }
     return;
