@@ -20,6 +20,7 @@ exports.run = async function(page, db, client) {
             console.log("[Kiwi] logged");
         } catch (e) {
             console.log('[Kiwi] ' + e);
+            await page.close();
             throw new Error('Kiwi login error, will try again later.')
         }
     }
@@ -32,6 +33,7 @@ exports.run = async function(page, db, client) {
         offers = await getOffers(page)
     } catch (e) {
         console.log('[Kiwi] ' + e);
+        await page.close();
         throw new Error("Kiwi offers not loaded; will try again later.")
     }
 
