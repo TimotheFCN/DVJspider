@@ -18,7 +18,7 @@ exports.run = async function(page, db, client) {
     //Check if the user is logged, if not, log the user
     if (page.url().includes("login")) {
         await login(page); //Log in
-        console.log("logged");
+        console.log("[GO] logged");
     }
 
     await page.goto(mainurl);
@@ -33,7 +33,7 @@ exports.run = async function(page, db, client) {
 
 //Log with a specified user on the site
 async function login(page) {
-    console.log("login");
+    console.log("[GO] login");
     await page.goto('https://www.graphistesonline.com/visitor_mypage_3.php?quoi=login&where='); //Go to the login page
     await page.waitForSelector('#loader', { visible: false }); //Wait for the page to load
     //Fill the form
@@ -46,7 +46,7 @@ async function login(page) {
 
 //Check if a feedback request is pending
 async function EvaluateMessage(page) {
-    console.log("feedback pending");
+    console.log("[GO] feedback pending");
     if (!messageSent) {
         channel.send("\n @here\n ⛔  `Une demande de feedback est en attente, impossible de vérifier les nouvelles offres.`  ⛔ \n<https://www.graphistesonline.com/mypage.php?quoi=my_demandes4> \n");
         messageSent = true;
@@ -100,7 +100,7 @@ async function processOffers(db, offers) {
             {
                 sendMessage(offer);
                 db.run('INSERT INTO GraphistesOnline VALUES(?)', [offer.num]); //Add the ID to the database
-                console.log("New offer found : " + offer.num);
+                console.log("[GO] New offer found : " + offer.num);
             }
         });
     });

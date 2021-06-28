@@ -4,47 +4,72 @@ const Discord = require('discord.js');
 //Login infos and discord channel from the confg file
 let username = process.env.KIWI_Username;
 let password = process.env.KIWI_Password;
+const mainurl = 'https://kiwi.junior-entreprises.com/business/appels-d-offres/';
 var channel;
 
 //Check new offers and sends a message on Discord if so
 exports.run = async function(page, db, client) {
     channel = client.channels.cache.get(process.env.Discord_Kiwi_Channel);
 
-    const mainurl = 'https://kiwi.junior-entreprises.com/business/appels-d-offres/';
-    await page.goto(mainurl);
 
+    await page.goto(mainurl);
     //Check if the user is logged, if not, log the user
     if (page.url().includes("auth")) {
-        await login(page); //Log in
-        console.log("logged");
+        try {
+            await login(page); //Log in
+            console.log("[Kiwi] logged");
+        } catch (e) {
+            console.log('[Kiwi] ' + e);
+            throw new Error('Kiwi login error, will try again later.')
+        }
     }
 
     await page.goto(mainurl);
-    //await page.waitForSelector('body > app-root > div > div.mybody > app-navbar > mat-sidenav-container > mat-sidenav-content > div > div > app-appels-d-offres > div > div:nth-child(4) > div:nth-child(2)', { visible: false }); //Wait for the page to load
 
-    await processOffers(db, await getOffers(page));
+    var offers = [];
+
+    try {
+        offers = await getOffers(page)
+    } catch (e) {
+        console.log('[Kiwi] ' + e);
+        throw new Error("Kiwi offers not loaded; will try again later.")
+    }
+
+    await processOffers(db, offers);
 
     await page.close();
 }
 
 //Log with a specified user on the site
 async function login(page) {
-    console.log("login");
-    await page.goto('https://auth.junior-entreprises.com/?returnUrl=https:%2F%2Fkiwi.junior-entreprises.com%2Flogin'); //Go to the login page
-    await page.waitForSelector('body > app-root > app-login > div.container > div > mat-card > mat-card-actions > button'); //Wait for the page to load
+    console.log("[Kiwi] login");
+    await page.goto('https://auth.junior-entreprises.com/?returnUrl=https:%2F%2Fkiwi.junior-entreprises.com%2Flog'); //Go to the login page
+    try {
+        await page.waitForSelector('body > app-root > app-login > div.container > div > mat-card > mat-card-actions > button'); //Wait for the page to load
+    } catch (e) {
+        throw new Error('Login page unreachable.')
+    }
     //Fill the form
     await page.type('#mat-input-0', username, { delay: 20 });
     await page.type('#mat-input-1', password, { delay: 20 });
     await page.keyboard.press('Enter');
-    //await page.click('body > app-root > app-login > div.container > div > mat-card > mat-card-actions > button', { delay: 5000 })
-    await page.waitForSelector('body > app-root > div > div.mybody > app-navbar > mat-sidenav-container > mat-sidenav-content > div > div > app-home > div > h1');
+    try {
+        await page.waitForSelector('body > app-root > div > div.mybody > app-navbar > mat-sidenav-container > mat-sidenav-content > div > div > app-home > div > h1');
+    } catch (e) {
+        await page.goto(mainurl); //Cancel if the selector is unavailable
+        throw new Error('Login not completed.')
+    }
     return;
 }
 
 //Sends back all offers on the first page
 async function getOffers(page) {
 
+    try {
     await page.waitForSelector('body > app-root > div > div.mybody > app-navbar > mat-sidenav-container > mat-sidenav-content > div > div > app-appels-d-offres > div > div:nth-child(4) > div:nth-child(2) > mat-card > app-card-ao:nth-child(2) > mat-card > mat-card-content > div:nth-child(5) > button > span.mat-button-wrapper', { visible: true }); //Wait for the page to load
+    } catch (e) {
+        throw new Error('Offers page unreachable.')
+    }
 
     var offers = []; //List of all the availible offers
 
@@ -81,7 +106,7 @@ async function processOffers(db, offers) {
             {
                 sendMessage(offer);
                 db.run('INSERT INTO Kiwi VALUES(?)', [offer.num]); //Add the ID to the database
-                console.log("New offer found : " + offer.num);
+                console.log("[Kiwi] New offer found : " + offer.num);
             }
         });
     });
