@@ -60,8 +60,8 @@ module.exports.run = async() => {
     await refreshKiwi();
 
     //Check GO every 10 minutes and Kiwi every 20 minutes
-    setInterval(refreshGO, 60000/*600000*/);
-    setInterval(refreshKiwi, 80000/*1200000*/);
+    setInterval(refreshGO, 600000);
+    setInterval(refreshKiwi, 1200000);
 
 
 }
