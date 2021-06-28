@@ -38,20 +38,30 @@ module.exports.run = async() => {
 
     async function refreshGO() {
         console.log("Checking GO");
-        await graphistesonline.run(await openGO(browser), db, client);
+        try {
+            await graphistesonline.run(await openGO(browser), db, client);
+            console.log('[GO] Done.');
+        } catch(e) {
+            console.log(e)
+        }
     }
 
     async function refreshKiwi() {
         console.log("Checking Kiwi");
-        await kiwi.run(await openKiwi(browser), db, client);
+        try {
+            await kiwi.run(await openKiwi(browser), db, client);
+            console.log('[Kiwi] Done.');
+        } catch(e) {
+            console.log(e)
+        }
     }
 
     await refreshGO();
     await refreshKiwi();
 
     //Check GO every 10 minutes and Kiwi every 20 minutes
-    setInterval(await refreshGO, 600000);
-    setInterval(await refreshKiwi, 1200000);
+    setInterval(refreshGO, 60000/*600000*/);
+    setInterval(refreshKiwi, 80000/*1200000*/);
 
 
 }
